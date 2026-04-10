@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Jogo da Rafaela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #EA580C;
+  --bg: #FFF7ED;
+  --text: #44403C;
+  --muted: #A8A29E;
+  --white: #FFFFFF;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Quicksand','Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;justify-content:center}
+h1,h2,h3,button,.slot,.tile{font-family:'Baloo 2','Quicksand',sans-serif}
+button{cursor:pointer;border:none;outline:none;font-family:'Baloo 2',sans-serif}
+button:active{transform:scale(0.93)!important}
+
+/* Layout */
+#app{width:100%;max-width:520px;height:100dvh;display:flex;flex-direction:column;align-items:center;padding:10px 14px;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* Decorative */
+.bg-circle{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+.bg-c1{top:-100px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(234,88,12,0.06),transparent 70%)}
+.bg-c2{bottom:-80px;left:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(234,88,12,0.04),transparent 70%)}
+
+/* Screens */
+.screen{display:none;flex-direction:column;align-items:center;width:100%;flex:1;position:relative;z-index:1}
+.screen.active{display:flex}
+
+/* Welcome */
+#welcome{justify-content:center;gap:18px;text-align:center;padding:20px 10px}
+#welcome h1{font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:-0.02em}
+#welcome p{color:var(--muted);font-size:1rem;line-height:1.6;max-width:300px}
+.theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:360px}
+.theme-grid button{border-radius:14px;padding:10px 6px;font-size:0.78rem;font-weight:700;color:var(--muted);background:white;box-shadow:0 2px 6px rgba(0,0,0,0.05);display:flex;flex-direction:column;align-items:center;gap:2px;border:3px solid transparent;transition:all 0.15s}
+.theme-grid button.sel{border-color:var(--accent);background:rgba(234,88,12,0.06);color:var(--accent)}
+.theme-grid button span.ico{font-size:1.4rem}
+.btn-start{padding:14px 44px;border-radius:50px;font-size:1.2rem;font-weight:800;color:white;background:linear-gradient(135deg,var(--accent),#C2410C);box-shadow:0 6px 20px rgba(234,88,12,0.3);margin-top:8px}
+
+/* Playing header */
+.hdr{width:100%;padding-top:4px;flex-shrink:0;position:relative;text-align:center}
+.hdr h2{font-size:1.2rem;font-weight:800;color:var(--accent)}
+.back-btn{position:absolute;left:0;top:4px;width:36px;height:36px;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--muted);border:2px solid #E7E5E4;padding:0;line-height:1}
+.hdr-stats{display:flex;justify-content:center;gap:10px;font-size:0.75rem;font-weight:700;color:var(--muted);margin-top:2px}
+.hdr-stats .lvl{background:rgba(234,88,12,0.08);color:var(--accent);padding:1px 8px;border-radius:8px}
+
+/* Theme pills */
+.pills{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;flex-shrink:0;margin:4px 0}
+.pills button{border-radius:16px;padding:3px 10px;font-size:0.7rem;font-weight:700;color:var(--muted);background:white;box-shadow:0 1px 3px rgba(0,0,0,0.04);border:2px solid transparent;transition:all 0.12s}
+.pills button.sel{border-color:var(--accent);background:rgba(234,88,12,0.06);color:var(--accent)}
+
+/* Phase label */
+.phase-label{background:rgba(234,88,12,0.08);color:var(--accent);padding:5px 16px;border-radius:10px;font-size:0.78rem;font-weight:700;text-align:center;flex-shrink:0}
+
+/* Emoji area */
+.emoji-area{text-align:center;margin:6px 0 2px}
+.emoji-big{font-size:3.5rem;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.08))}
+.emoji-hint{color:var(--muted);font-size:0.85rem;font-weight:600;margin-top:4px}
+
+/* Sound btn */
+.snd-btn{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#C2410C);color:white;font-size:1.3rem;box-shadow:0 4px 14px rgba(234,88,12,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow 0.3s}
+.snd-btn.speaking{animation:glow 1s ease infinite}
+
+/* Slots row */
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;flex-shrink:0;margin:4px 0}
+.slot{min-width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;padding:0 14px;transition:all 0.2s;background:white;border:2.5px dashed #D6D3D1;color:#D6D3D1}
+.slot.filled{border-style:solid;animation:popScale 0.3s ease}
+.slot.correct{background:linear-gradient(135deg,rgba(22,163,74,0.08),rgba(22,163,74,0.03));border-color:#16A34A;color:#16A34A;border-style:solid}
+.slot.wrong{background:#FEE2E2;border-color:#F87171;color:#991B1B;border-style:solid;animation:shake 0.4s ease}
+
+/* Letter slots (phase 2) */
+.lslots{display:flex;gap:6px;justify-content:center;flex-shrink:0}
+.lslot{width:44px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;background:white;border:2.5px dashed #D6D3D1;color:#D6D3D1;transition:all 0.2s}
+.lslot.filled{background:rgba(234,88,12,0.08);border:2.5px solid var(--accent);color:var(--accent);animation:popScale 0.3s ease}
+
+/* Tile bank */
+.bank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:14px 16px;background:white;border-radius:20px;box-shadow:0 3px 12px rgba(0,0,0,0.05);flex-shrink:0}
+.tile{min-width:62px;padding:12px 20px;border-radius:14px;font-size:1.25rem;font-weight:800;color:white;box-shadow:0 4px 0 rgba(0,0,0,0.12),0 4px 12px rgba(0,0,0,0.06);transition:all 0.15s}
+.tile.used{opacity:0.3;box-shadow:none;pointer-events:none;background:#E7E5E4!important}
+
+/* Letter tiles */
+.ltile{width:48px;height:52px;border-radius:12px;font-size:1.4rem;font-weight:800;color:white;box-shadow:0 4px 0 rgba(0,0,0,0.12),0 3px 10px rgba(0,0,0,0.06);transition:all 0.15s;padding:0;display:flex;align-items:center;justify-content:center}
+.ltile.used{opacity:0.25;box-shadow:none;pointer-events:none;background:#E7E5E4!important}
+
+/* Syllable progress (phase 2) */
+.syl-progress{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.syl-progress .sp-item{font-size:1.1rem;font-weight:800;padding:4px 10px;border-radius:10px;transition:all 0.3s}
+.syl-progress .sp-item.done{font-size:1.1rem}
+.syl-progress .sp-item.current{font-size:1.4rem;color:white;background:linear-gradient(135deg,var(--accent),#C2410C);padding:6px 14px}
+.syl-progress .sp-item.pending{color:#D6D3D1}
+
+/* Action btns */
+.act-btn{padding:8px 18px;border-radius:12px;font-size:0.8rem;font-weight:700;background:white;color:var(--muted);border:2px solid #E7E5E4;flex-shrink:0}
+.skip-btn{padding:8px 16px;border-radius:10px;background:transparent;font-size:0.78rem;font-weight:700;color:#D6D3D1;margin-top:auto;padding-bottom:10px;flex-shrink:0}
+
+/* Feedback screen */
+#feedback{justify-content:center;gap:14px;text-align:center;padding:20px 10px}
+.fb-emoji{font-size:64px}
+.fb-msg{font-size:1.5rem;font-weight:800}
+.fb-word-row{display:flex;align-items:center;gap:10px;justify-content:center}
+.fb-word-row .fb-e{font-size:2.8rem}
+.fb-syls{font-size:1.8rem;font-weight:800;display:flex;gap:3px}
+.fb-break{color:var(--muted);font-size:0.9rem;font-weight:600}
+.fb-stats{display:flex;gap:14px;font-size:0.82rem;font-weight:700;color:var(--muted)}
+.fb-btns{display:flex;gap:10px;margin-top:8px}
+.fb-listen{padding:10px 20px;border-radius:14px;background:white;font-size:0.9rem;font-weight:700;color:var(--accent);border:2px solid rgba(234,88,12,0.2)}
+.fb-next{padding:12px 32px;border-radius:50px;font-size:1.05rem;font-weight:800;color:white;background:linear-gradient(135deg,var(--accent),#C2410C);box-shadow:0 4px 15px rgba(234,88,12,0.25)}
+
+/* Confetti */
+.confetti-piece{position:fixed;top:-10px;pointer-events:none;z-index:50;animation:confDrop 3s ease-in forwards}
+
+/* Anims */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes popScale{0%{transform:scale(0.6)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes slideUp{0%{transform:translateY(18px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes confDrop{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(234,88,12,0.3)}50%{box-shadow:0 0 22px rgba(234,88,12,0.6)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes popIn{0%{transform:scale(0.3);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+
+.anim-float{animation:float 3s ease-in-out infinite}
+.anim-pulse{animation:pulse 0.6s ease-in-out infinite}
+.anim-popin{animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275)}
+</style>
+</head>
+<body>
+
+<div class="bg-circle bg-c1"></div>
+<div class="bg-circle bg-c2"></div>
+
+<div id="app">
+
+  <!-- ═══════ WELCOME ═══════ -->
+  <div id="welcome" class="screen active">
+    <div class="anim-float" style="font-size:72px">📖</div>
+    <h1>Oi, Rafaela!</h1>
+    <p>Vamos aprender a ler?<br>Ouça a palavra, depois monte ela!</p>
+    <div class="theme-grid" id="welcomeThemes"></div>
+    <button class="btn-start" onclick="startGame()">Vamos Jogar!</button>
+  </div>
+
+  <!-- ═══════ PLAYING ═══════ -->
+  <div id="playing" class="screen">
+    <div class="hdr">
+      <button class="back-btn" onclick="goHome()" title="Voltar">←</button>
+      <h2>Jogo da Rafaela</h2>
+      <div class="hdr-stats">
+        <span>Acertos: <b id="pScore">0</b></span>
+        <span id="pStars" style="color:#EAB308"></span>
+        <span class="lvl" id="pLevel">Nível 1</span>
+      </div>
+    </div>
+    <div class="pills" id="playingThemes"></div>
+    <div class="phase-label" id="phaseLabel"></div>
+
+    <div class="emoji-area">
+      <div class="emoji-big anim-float" id="pEmoji"></div>
+      <div class="emoji-hint" id="pHint"></div>
+    </div>
+
+    <button class="snd-btn" id="sndBtn" onclick="replay()">🔊</button>
+
+    <!-- Phase 1: syllable slots + bank -->
+    <div id="phase1Area" style="display:none;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div class="slots" id="sylSlots"></div>
+      <div class="bank" id="sylBank"></div>
+      <button class="act-btn" id="undoSyl" onclick="undoSyllable()" style="display:none">← Apagar</button>
+    </div>
+
+    <!-- Phase 2: letter building -->
+    <div id="phase2Area" style="display:none;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div class="syl-progress" id="sylProgress"></div>
+      <div class="lslots" id="letSlots"></div>
+      <div class="bank" id="letBank"></div>
+      <button class="act-btn" id="undoLet" onclick="undoLetter()" style="display:none">← Apagar</button>
+    </div>
+
+    <button class="skip-btn" onclick="skipWord()">Pular essa palavra →</button>
+  </div>
+
+  <!-- ═══════ FEEDBACK ═══════ -->
+  <div id="feedback" class="screen">
+    <div class="fb-emoji" id="fbEmoji"></div>
+    <div class="fb-msg" id="fbMsg"></div>
+    <div class="fb-word-row">
+      <span class="fb-e" id="fbE"></span>
+      <div class="fb-syls" id="fbSyls"></div>
+    </div>
+    <div class="fb-break" id="fbBreak"></div>
+    <div class="fb-stats" id="fbStats"></div>
+    <div class="fb-btns">
+      <button class="fb-listen" onclick="goHome()" title="Voltar ao menu">🏠</button>
+      <button class="fb-listen" onclick="replay()">🔊 Ouvir</button>
+      <button class="fb-next" onclick="nextRound()">Próxima →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// WORD DATABASE
+// ═══════════════════════════════════════════════════════
+const THEMES = {
+  animais: {
+    icon:"🐾", label:"Animais", accent:"#EA580C", bg:"#FFF7ED",
+    words:[
+      {w:"GATO",e:"🐱",h:"Faz miau",s:["GA","TO"],lv:1},
+      {w:"PATO",e:"🦆",h:"Nada na lagoa",s:["PA","TO"],lv:1},
+      {w:"RATO",e:"🐭",h:"Gosta de queijo",s:["RA","TO"],lv:1},
+      {w:"SAPO",e:"🐸",h:"Pula muito",s:["SA","PO"],lv:1},
+      {w:"LOBO",e:"🐺",h:"Uiva à noite",s:["LO","BO"],lv:1},
+      {w:"VACA",e:"🐄",h:"Dá o leite",s:["VA","CA"],lv:1},
+      {w:"FOCA",e:"🦭",h:"Vive no gelo",s:["FO","CA"],lv:1},
+      {w:"BODE",e:"🐐",h:"Tem barba",s:["BO","DE"],lv:1},
+      {w:"PEIXE",e:"🐟",h:"Mora na água",s:["PEI","XE"],lv:2},
+      {w:"LEÃO",e:"🦁",h:"Rei da selva",s:["LE","ÃO"],lv:2},
+      {w:"COBRA",e:"🐍",h:"Rasteja no chão",s:["CO","BRA"],lv:2},
+      {w:"URSO",e:"🐻",h:"Grande e peludo",s:["UR","SO"],lv:2},
+      {w:"TIGRE",e:"🐅",h:"Tem listras",s:["TI","GRE"],lv:2},
+      {w:"GIRAFA",e:"🦒",h:"Pescoço longo",s:["GI","RA","FA"],lv:2},
+      {w:"MACACO",e:"🐒",h:"Sobe em árvore",s:["MA","CA","CO"],lv:2},
+      {w:"CAVALO",e:"🐴",h:"Corre rápido",s:["CA","VA","LO"],lv:2},
+      {w:"GALINHA",e:"🐔",h:"Bota ovos",s:["GA","LI","NHA"],lv:3},
+      {w:"COELHO",e:"🐰",h:"Orelhas grandes",s:["CO","E","LHO"],lv:3},
+      {w:"BALEIA",e:"🐋",h:"Maior do mar",s:["BA","LEI","A"],lv:3},
+      {w:"OVELHA",e:"🐑",h:"Dá a lã",s:["O","VE","LHA"],lv:3},
+    ]
+  },
+  comidas: {
+    icon:"🍎", label:"Comidas", accent:"#DC2626", bg:"#FFF1F2",
+    words:[
+      {w:"UVA",e:"🍇",h:"Fruta roxa",s:["U","VA"],lv:1},
+      {w:"BOLO",e:"🎂",h:"De aniversário",s:["BO","LO"],lv:1},
+      {w:"SUCO",e:"🧃",h:"De laranja",s:["SU","CO"],lv:1},
+      {w:"CAFÉ",e:"☕",h:"Bebida quente",s:["CA","FÉ"],lv:1},
+      {w:"COCO",e:"🥥",h:"Fruta da praia",s:["CO","CO"],lv:1},
+      {w:"BIFE",e:"🥩",h:"De carne",s:["BI","FE"],lv:1},
+      {w:"LEITE",e:"🥛",h:"Branco e cremoso",s:["LEI","TE"],lv:2},
+      {w:"QUEIJO",e:"🧀",h:"Amarelo e gostoso",s:["QUEI","JO"],lv:2},
+      {w:"MILHO",e:"🌽",h:"De festa junina",s:["MI","LHO"],lv:2},
+      {w:"ARROZ",e:"🍚",h:"Com feijão",s:["AR","ROZ"],lv:2},
+      {w:"BANANA",e:"🍌",h:"Fruta amarela",s:["BA","NA","NA"],lv:2},
+      {w:"TOMATE",e:"🍅",h:"Vermelho pro molho",s:["TO","MA","TE"],lv:2},
+      {w:"PIPOCA",e:"🍿",h:"De cinema",s:["PI","PO","CA"],lv:2},
+      {w:"MORANGO",e:"🍓",h:"Vermelho e doce",s:["MO","RAN","GO"],lv:3},
+      {w:"CENOURA",e:"🥕",h:"Coelho gosta",s:["CE","NOU","RA"],lv:3},
+      {w:"SORVETE",e:"🍦",h:"Gelado e gostoso",s:["SOR","VE","TE"],lv:3},
+      {w:"ABACAXI",e:"🍍",h:"Fruta com coroa",s:["A","BA","CA","XI"],lv:3},
+    ]
+  },
+  natureza: {
+    icon:"🌿", label:"Natureza", accent:"#16A34A", bg:"#F0FDF4",
+    words:[
+      {w:"SOL",e:"☀️",h:"Brilha no céu",s:["SOL"],lv:1},
+      {w:"LUA",e:"🌙",h:"Brilha à noite",s:["LU","A"],lv:1},
+      {w:"RIO",e:"🏞️",h:"Água que corre",s:["RI","O"],lv:1},
+      {w:"LAGO",e:"💧",h:"Água parada",s:["LA","GO"],lv:1},
+      {w:"FOGO",e:"🔥",h:"Muito quente",s:["FO","GO"],lv:1},
+      {w:"NUVEM",e:"☁️",h:"Branquinha no céu",s:["NU","VEM"],lv:2},
+      {w:"CHUVA",e:"🌧️",h:"Cai do céu",s:["CHU","VA"],lv:2},
+      {w:"FOLHA",e:"🍃",h:"Da árvore",s:["FO","LHA"],lv:2},
+      {w:"PEDRA",e:"🪨",h:"Dura e pesada",s:["PE","DRA"],lv:2},
+      {w:"PRAIA",e:"🏖️",h:"Areia e ondas",s:["PRAI","A"],lv:2},
+      {w:"TERRA",e:"🌍",h:"Nosso planeta",s:["TER","RA"],lv:2},
+      {w:"VENTO",e:"💨",h:"Sopra forte",s:["VEN","TO"],lv:2},
+      {w:"ESTRELA",e:"⭐",h:"Brilha à noite",s:["ES","TRE","LA"],lv:3},
+      {w:"FLORESTA",e:"🌳",h:"Cheia de árvores",s:["FLO","RES","TA"],lv:3},
+    ]
+  },
+  coisas: {
+    icon:"🏠", label:"Coisas", accent:"#2563EB", bg:"#EFF6FF",
+    words:[
+      {w:"MESA",e:"🪑",h:"Pra comer",s:["ME","SA"],lv:1},
+      {w:"BOLA",e:"⚽",h:"Pra jogar",s:["BO","LA"],lv:1},
+      {w:"DADO",e:"🎲",h:"De jogar",s:["DA","DO"],lv:1},
+      {w:"CAMA",e:"🛏️",h:"Pra dormir",s:["CA","MA"],lv:1},
+      {w:"VASO",e:"🏺",h:"De flor",s:["VA","SO"],lv:1},
+      {w:"LATA",e:"🥫",h:"De metal",s:["LA","TA"],lv:1},
+      {w:"MALA",e:"🧳",h:"De viagem",s:["MA","LA"],lv:1},
+      {w:"RODA",e:"🎡",h:"Gira gira",s:["RO","DA"],lv:1},
+      {w:"PORTA",e:"🚪",h:"Abre e fecha",s:["POR","TA"],lv:2},
+      {w:"LIVRO",e:"📖",h:"Pra ler",s:["LI","VRO"],lv:2},
+      {w:"CARRO",e:"🚗",h:"Anda na rua",s:["CAR","RO"],lv:2},
+      {w:"BALDE",e:"🪣",h:"De água",s:["BAL","DE"],lv:2},
+      {w:"BONECA",e:"🧸",h:"Brinquedo",s:["BO","NE","CA"],lv:2},
+      {w:"JANELA",e:"🪟",h:"Olha pra fora",s:["JA","NE","LA"],lv:2},
+      {w:"CADEIRA",e:"🪑",h:"Pra sentar",s:["CA","DEI","RA"],lv:3},
+      {w:"ESPELHO",e:"🪞",h:"Reflete a gente",s:["ES","PE","LHO"],lv:3},
+    ]
+  },
+  familia: {
+    icon:"👨‍👩‍👧", label:"Família", accent:"#DB2777", bg:"#FDF2F8",
+    words:[
+      {w:"PAI",e:"👨",h:"Papai",s:["PAI"],lv:1},
+      {w:"MÃE",e:"👩",h:"Mamãe",s:["MÃE"],lv:1},
+      {w:"AVÓ",e:"👵",h:"Vovó",s:["A","VÓ"],lv:1},
+      {w:"BEBÊ",e:"👶",h:"Bem pequenino",s:["BE","BÊ"],lv:1},
+      {w:"TIA",e:"👩‍🦱",h:"Irmã do papai",s:["TI","A"],lv:1},
+      {w:"IRMÃO",e:"👦",h:"Menino da família",s:["IR","MÃO"],lv:2},
+      {w:"PRIMO",e:"🧒",h:"Filho do tio",s:["PRI","MO"],lv:2},
+      {w:"FILHO",e:"👦",h:"Menino do papai",s:["FI","LHO"],lv:2},
+      {w:"FILHA",e:"👧",h:"Menina da mamãe",s:["FI","LHA"],lv:2},
+      {w:"AMIGA",e:"👭",h:"Pra brincar",s:["A","MI","GA"],lv:2},
+      {w:"MENINO",e:"👦",h:"Garoto",s:["ME","NI","NO"],lv:2},
+      {w:"MENINA",e:"👧",h:"Garota",s:["ME","NI","NA"],lv:2},
+    ]
+  },
+};
+
+const COLORS=["#E11D48","#EA580C","#D97706","#16A34A","#0891B2","#7C3AED","#C026D3","#2563EB"];
+const PRAISE=["Muito bem, Rafa!","Parabéns!","Arrasou!","Perfeito!","Isso mesmo!","Boa!"];
+const TRYAGAIN=["Tenta de novo!","Quase lá!","Escuta mais uma vez!"];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let S = {
+  theme:"animais", level:1, phase:1, score:0, streak:0, stars:0,
+  word:null, attempts:0, used:new Set(),
+  // Phase 1
+  placed:[], syllablePool:[],
+  // Phase 2
+  targetSylIdx:0, builtLetters:[], completedSyls:[], letterPool:[],
+  speaking:false,
+};
+
+// ═══════════════════════════════════════════════════════
+// SPEECH
+// ═══════════════════════════════════════════════════════
+let ptVoice=null;
+function loadVoices(){
+  const v=speechSynthesis.getVoices();
+  ptVoice=v.find(x=>x.lang&&x.lang.startsWith("pt-BR"))||v.find(x=>x.lang&&x.lang.startsWith("pt"))||null;
+}
+if(speechSynthesis.onvoiceschanged!==undefined) speechSynthesis.onvoiceschanged=loadVoices;
+loadVoices();
+
+function say(text,rate=0.72,pitch=1.1,onEnd){
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.toLowerCase());
+  u.lang="pt-BR";u.rate=rate;u.pitch=pitch;
+  if(ptVoice)u.voice=ptVoice;
+  if(onEnd)u.onend=onEnd;
+  speechSynthesis.speak(u);
+}
+
+function sayWordThenSyllables(w,syls,cb){
+  setSpeaking(true);
+  say(w,0.7,1.1,()=>{
+    let d=400;
+    syls.forEach((s,i)=>{
+      setTimeout(()=>{
+        say(s,0.55,1.15,i===syls.length-1?()=>{setSpeaking(false);if(cb)cb();}:undefined);
+      },d);
+      d+=800;
+    });
+    if(syls.length===0){setSpeaking(false);if(cb)cb();}
+  });
+}
+
+function setSpeaking(v){
+  S.speaking=v;
+  const btn=document.getElementById('sndBtn');
+  if(btn){v?btn.classList.add('speaking'):btn.classList.remove('speaking');}
+  const em=document.getElementById('pEmoji');
+  if(em){v?(em.classList.remove('anim-float'),em.classList.add('anim-pulse')):(em.classList.remove('anim-pulse'),em.classList.add('anim-float'));}
+}
+
+function replay(){
+  if(!S.word)return;
+  sayWordThenSyllables(S.word.w,S.word.s);
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function applyThemeColors(){
+  const t=THEMES[S.theme];
+  document.documentElement.style.setProperty('--accent',t.accent);
+  document.documentElement.style.setProperty('--bg',t.bg);
+  document.body.style.background=t.bg;
+}
+
+// ═══════════════════════════════════════════════════════
+// WELCOME
+// ═══════════════════════════════════════════════════════
+function renderWelcomeThemes(){
+  const c=document.getElementById('welcomeThemes');
+  c.innerHTML='';
+  Object.entries(THEMES).forEach(([k,t])=>{
+    const b=document.createElement('button');
+    b.className=k===S.theme?'sel':'';
+    b.innerHTML=`<span class="ico">${t.icon}</span>${t.label}`;
+    b.onclick=()=>{S.theme=k;applyThemeColors();renderWelcomeThemes()};
+    c.appendChild(b);
+  });
+}
+
+function startGame(){
+  S.score=0;S.streak=0;S.stars=0;S.level=1;S.phase=1;S.used=new Set();
+  showScreen('playing');
+  setupRound();
+}
+
+// ═══════════════════════════════════════════════════════
+// THEME PILLS (playing)
+// ═══════════════════════════════════════════════════════
+function renderPlayingThemes(){
+  const c=document.getElementById('playingThemes');
+  c.innerHTML='';
+  Object.entries(THEMES).forEach(([k,t])=>{
+    const b=document.createElement('button');
+    b.className=k===S.theme?'sel':'';
+    b.textContent=t.icon+' '+t.label;
+    b.onclick=()=>{S.theme=k;S.used=new Set();applyThemeColors();setupRound()};
+    c.appendChild(b);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SETUP ROUND
+// ═══════════════════════════════════════════════════════
+function setupRound(){
+  const t=THEMES[S.theme];
+  // Pick word
+  let pool=t.words.filter(x=>x.lv<=S.level&&!S.used.has(x.w));
+  if(!pool.length){S.used.clear();pool=t.words.filter(x=>x.lv<=S.level);}
+  if(!pool.length)pool=t.words;
+  const w=pick(pool);
+  S.word=w;S.attempts=0;S.used.add(w.w);
+
+  // Decide phase: monosyllables go to phase 2, otherwise follow current phase setting
+  if(w.s.length<=1){
+    S.phase=2;
+  } else if(S.score>=8){
+    S.phase=Math.random()<0.5?1:2;
+  } else {
+    S.phase=1;
+  }
+
+  applyThemeColors();
+  renderPlayingThemes();
+  renderHeader();
+
+  // Phase label
+  document.getElementById('phaseLabel').textContent=
+    S.phase===1?"Ouça e monte com as sílabas":"Ouça e monte letra por letra";
+
+  // Emoji
+  document.getElementById('pEmoji').textContent=w.e;
+  document.getElementById('pHint').textContent=w.h;
+
+  // Show correct phase area
+  document.getElementById('phase1Area').style.display=S.phase===1?'flex':'none';
+  document.getElementById('phase2Area').style.display=S.phase===2?'flex':'none';
+
+  if(S.phase===1) setupPhase1();
+  if(S.phase===2) setupPhase2();
+
+  // Speak
+  setTimeout(()=>sayWordThenSyllables(w.w,w.s),500);
+}
+
+function renderHeader(){
+  document.getElementById('pScore').textContent=S.score;
+  document.getElementById('pStars').textContent='⭐'.repeat(Math.min(S.stars,10));
+  document.getElementById('pLevel').textContent='Nível '+S.level;
+}
+
+// ═══════════════════════════════════════════════════════
+// PHASE 1: Syllable Ordering
+// ═══════════════════════════════════════════════════════
+function setupPhase1(){
+  const w=S.word;
+  const t=THEMES[S.theme];
+  // Distractors
+  const allSyls=t.words.flatMap(x=>x.s);
+  const dist=shuffle(allSyls.filter(s=>!w.s.includes(s))).slice(0,Math.min(2,S.level));
+  S.syllablePool=shuffle([...w.s,...dist]);
+  S.placed=[];
+  renderPhase1();
+}
+
+function renderPhase1(){
+  const w=S.word;
+  // Slots
+  const sc=document.getElementById('sylSlots');
+  sc.innerHTML='';
+  w.s.forEach((syl,i)=>{
+    const d=document.createElement('div');
+    d.className='slot';
+    d.style.minWidth=Math.max(syl.length*20,54)+'px';
+    if(S.placed[i]){
+      d.textContent=S.placed[i];
+      d.classList.add('correct');
+      d.style.borderColor=COLORS[i%COLORS.length];
+      d.style.color=COLORS[i%COLORS.length];
+      d.style.background=COLORS[i%COLORS.length]+'12';
+    }
+    sc.appendChild(d);
+  });
+
+  // Bank
+  const bc=document.getElementById('sylBank');
+  bc.innerHTML='';
+  S.syllablePool.forEach((syl,i)=>{
+    const b=document.createElement('button');
+    b.className='tile';
+    // Check if used
+    const usedCount=S.placed.filter(p=>p===syl).length;
+    const poolCount=S.syllablePool.filter(p=>p===syl).length;
+    const isUsed=usedCount>0&&usedCount>=S.syllablePool.slice(0,i+1).filter(p=>p===syl).length
+      &&usedCount>=poolCount;
+    // Simpler: mark as used if all instances of this syl in pool are placed
+    const totalInPool=S.syllablePool.filter(p=>p===syl).length;
+    const totalPlaced=S.placed.filter(p=>p===syl).length;
+    // This specific index: count how many of this syl appear before index i in pool
+    const indexAmongSame=S.syllablePool.slice(0,i+1).filter(p=>p===syl).length;
+    const used2=indexAmongSame<=totalPlaced;
+
+    if(used2)b.classList.add('used');
+    b.textContent=syl;
+    b.style.background=used2?'':'linear-gradient(135deg,'+COLORS[i%COLORS.length]+','+COLORS[i%COLORS.length]+'CC)';
+    b.style.animationDelay=(i*0.07)+'s';
+    b.style.animation='slideUp 0.3s ease '+(i*0.07)+'s both';
+    b.onclick=()=>{if(!used2)handleSylTap(syl,i)};
+    bc.appendChild(b);
+  });
+
+  // Undo button
+  document.getElementById('undoSyl').style.display=S.placed.length>0?'block':'none';
+}
+
+function handleSylTap(syl){
+  const w=S.word;
+  const slot=S.placed.length;
+  if(slot>=w.s.length)return;
+
+  if(syl===w.s[slot]){
+    S.placed.push(syl);
+    say(syl,0.6,1.15);
+    renderPhase1();
+
+    // Animate slot
+    const slots=document.getElementById('sylSlots').children;
+    if(slots[slot]){
+      slots[slot].classList.remove('correct');
+      slots[slot].classList.add('filled');
+      setTimeout(()=>{slots[slot].classList.remove('filled');slots[slot].classList.add('correct')},300);
+    }
+
+    if(S.placed.length===w.s.length){
+      setTimeout(()=>{
+        say(w.w,0.7,1.1);
+        setTimeout(handleCorrect,600);
+      },500);
+    }
+  } else {
+    // Wrong
+    const slots=document.getElementById('sylSlots').children;
+    if(slots[slot]){
+      slots[slot].classList.add('wrong');
+      setTimeout(()=>slots[slot].classList.remove('wrong'),500);
+    }
+    handleWrong();
+  }
+}
+
+function undoSyllable(){
+  if(S.placed.length>0){
+    S.placed.pop();
+    renderPhase1();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PHASE 2: Build syllable from letters
+// ═══════════════════════════════════════════════════════
+function setupPhase2(){
+  S.targetSylIdx=0;
+  S.completedSyls=[];
+  S.builtLetters=[];
+  setupLetterPool();
+  renderPhase2();
+}
+
+function setupLetterPool(){
+  const w=S.word;
+  const syl=w.s[S.targetSylIdx];
+  const letters=syl.split('');
+  const t=THEMES[S.theme];
+  const allLetters=t.words.flatMap(x=>x.w.split(''));
+  const extras=shuffle(allLetters.filter(l=>!letters.includes(l))).slice(0,Math.min(3,letters.length+1));
+  S.letterPool=shuffle([...letters,...extras]);
+  S.builtLetters=[];
+}
+
+function renderPhase2(){
+  const w=S.word;
+  // Syllable progress
+  const sp=document.getElementById('sylProgress');
+  sp.innerHTML='';
+  w.s.forEach((syl,i)=>{
+    const d=document.createElement('span');
+    d.className='sp-item';
+    if(i<S.targetSylIdx){
+      d.classList.add('done');
+      d.textContent=S.completedSyls[i]||syl;
+      d.style.color=COLORS[i%COLORS.length];
+      d.style.background=COLORS[i%COLORS.length]+'12';
+    } else if(i===S.targetSylIdx){
+      d.classList.add('current');
+      d.textContent=S.builtLetters.length>0?S.builtLetters.join('')+'…':'?';
+    } else {
+      d.classList.add('pending');
+      d.textContent='· · ·';
+    }
+    sp.appendChild(d);
+  });
+
+  // Letter slots
+  const ls=document.getElementById('letSlots');
+  ls.innerHTML='';
+  const targetSyl=w.s[S.targetSylIdx];
+  targetSyl.split('').forEach((letter,i)=>{
+    const d=document.createElement('div');
+    d.className='lslot';
+    if(S.builtLetters[i]){
+      d.textContent=S.builtLetters[i];
+      d.classList.add('filled');
+    }
+    ls.appendChild(d);
+  });
+
+  // Letter bank
+  const lb=document.getElementById('letBank');
+  lb.innerHTML='';
+  S.letterPool.forEach((letter,i)=>{
+    const b=document.createElement('button');
+    b.className='ltile';
+    const indexAmong=S.letterPool.slice(0,i+1).filter(p=>p===letter).length;
+    const placed=S.builtLetters.filter(p=>p===letter).length;
+    const isUsed=indexAmong<=placed;
+    if(isUsed)b.classList.add('used');
+    b.textContent=letter;
+    b.style.background=isUsed?'':'linear-gradient(135deg,'+COLORS[i%COLORS.length]+','+COLORS[i%COLORS.length]+'CC)';
+    b.style.animation='slideUp 0.3s ease '+(i*0.05)+'s both';
+    b.onclick=()=>{if(!isUsed)handleLetterTap(letter,i)};
+    lb.appendChild(b);
+  });
+
+  document.getElementById('undoLet').style.display=S.builtLetters.length>0?'block':'none';
+}
+
+function handleLetterTap(letter){
+  const w=S.word;
+  const syl=w.s[S.targetSylIdx];
+  const target=syl.split('');
+  const pos=S.builtLetters.length;
+  if(pos>=target.length)return;
+
+  if(letter===target[pos]){
+    S.builtLetters.push(letter);
+    say(letter,0.7,1.2);
+    renderPhase2();
+
+    if(S.builtLetters.length===target.length){
+      // Syllable complete
+      setTimeout(()=>say(syl,0.6,1.1),200);
+      S.completedSyls.push(syl);
+
+      if(S.targetSylIdx+1<w.s.length){
+        setTimeout(()=>{
+          S.targetSylIdx++;
+          setupLetterPool();
+          renderPhase2();
+          say(w.s[S.targetSylIdx],0.55,1.15);
+        },900);
+      } else {
+        // Word complete
+        setTimeout(()=>{
+          say(w.w,0.7,1.1);
+          setTimeout(handleCorrect,600);
+        },700);
+      }
+    }
+  } else {
+    handleWrong();
+  }
+}
+
+function undoLetter(){
+  if(S.builtLetters.length>0){
+    S.builtLetters.pop();
+    renderPhase2();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CORRECT / WRONG / NEXT
+// ═══════════════════════════════════════════════════════
+function handleCorrect(){
+  S.score++;
+  S.streak++;
+  if(S.streak%3===0)S.stars++;
+  if(S.score>0&&S.score%5===0&&S.level<3)S.level++;
+  showFeedback(true,pick(PRAISE));
+  launchConfetti();
+  say(pick(PRAISE),0.9,1.15);
+}
+
+function handleWrong(){
+  S.attempts++;
+  S.streak=0;
+  say(pick(TRYAGAIN),0.85,1.0);
+  if(S.attempts>=3){
+    showFeedback(false,"A palavra era...");
+    setTimeout(()=>sayWordThenSyllables(S.word.w,S.word.s),300);
+  }
+}
+
+function showFeedback(ok,msg){
+  showScreen('feedback');
+  const w=S.word;
+  document.getElementById('fbEmoji').textContent=ok?'🎉':'💪';
+  const m=document.getElementById('fbMsg');
+  m.textContent=msg;
+  m.style.color=ok?'#059669':'#D97706';
+  document.getElementById('fbE').textContent=w.e;
+
+  const syls=document.getElementById('fbSyls');
+  syls.innerHTML='';
+  w.s.forEach((s,i)=>{
+    const sp=document.createElement('span');
+    sp.textContent=s;
+    sp.style.color=COLORS[i%COLORS.length];
+    syls.appendChild(sp);
+  });
+
+  document.getElementById('fbBreak').textContent=w.s.join(' · ');
+
+  let statsHtml='<span>Acertos: '+S.score+'</span>';
+  statsHtml+='<span style="color:#EAB308">'+'⭐'.repeat(Math.min(S.stars,10))+'</span>';
+  if(S.streak>=3)statsHtml+='<span style="color:#F59E0B">'+S.streak+' seguidas!</span>';
+  document.getElementById('fbStats').innerHTML=statsHtml;
+
+  document.getElementById('feedback').classList.add('anim-popin');
+  setTimeout(()=>document.getElementById('feedback').classList.remove('anim-popin'),500);
+}
+
+function nextRound(){
+  showScreen('playing');
+  setupRound();
+}
+
+function skipWord(){
+  S.streak=0;
+  setupRound();
+}
+
+function goHome(){
+  speechSynthesis.cancel();
+  showScreen('welcome');
+  renderWelcomeThemes();
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════
+function launchConfetti(){
+  for(let i=0;i<35;i++){
+    const d=document.createElement('div');
+    d.className='confetti-piece';
+    d.style.left=Math.random()*100+'%';
+    d.style.width=(6+Math.random()*10)+'px';
+    d.style.height=(6+Math.random()*10)+'px';
+    d.style.background=COLORS[Math.floor(Math.random()*COLORS.length)];
+    d.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    d.style.animationDelay=Math.random()*0.5+'s';
+    d.style.animationDuration=(2+Math.random()*2)+'s';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),4500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// iOS AUDIO UNLOCK
+// ═══════════════════════════════════════════════════════
+// iOS Safari requires user interaction to unlock audio
+document.addEventListener('touchstart',function iosUnlock(){
+  const u=new SpeechSynthesisUtterance('');
+  u.volume=0;
+  speechSynthesis.speak(u);
+  document.removeEventListener('touchstart',iosUnlock);
+},{once:true});
+document.addEventListener('click',function iosUnlock2(){
+  const u=new SpeechSynthesisUtterance('');
+  u.volume=0;
+  speechSynthesis.speak(u);
+  document.removeEventListener('click',iosUnlock2);
+},{once:true});
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+applyThemeColors();
+renderWelcomeThemes();
+</script>
+</body>
+</html>
